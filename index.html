@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>作文＆俳句レベルアップアドバイザー</title>
+<style>
+/* ===== 色の設定（黄・緑・オレンジ） ===== */
+:root{--y:#ffe066;--g:#7ed957;--o:#ff9f43;--bg:#fffbea;--ink:#3a3320;--card:#fff;}
+*{box-sizing:border-box}
+body{margin:0;font-family:"BIZ UDPGothic","Hiragino Maru Gothic ProN","Yu Gothic",sans-serif;background:var(--bg);color:var(--ink);line-height:1.8}
+header{background:var(--y);padding:10px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-bottom:4px solid var(--o)}
+header h1{font-size:1.1rem;margin:0;flex:1}
+.gear{border:0;background:#fff;border-radius:50%;width:40px;height:40px;font-size:1.3rem;cursor:pointer}
+.tabs{display:flex;gap:6px;padding:10px 12px 0;flex-wrap:wrap}
+.tab,.btn,.sbtn{border:3px solid var(--o);background:#fff;border-radius:18px;padding:8px 14px;font-size:1rem;font-family:inherit;cursor:pointer;color:var(--ink)}
+.tab.on,.sbtn.on{background:var(--g);border-color:#4caf2a;font-weight:bold}
+.btn{background:var(--o);color:#fff;font-weight:bold;font-size:1.1rem;padding:10px 24px}
+main{padding:12px;max-width:820px;margin:auto}
+.page{display:none}.page.on{display:block}
+.box{background:var(--card);border-radius:20px;padding:14px;margin:10px 0;border:3px solid var(--y)}
+textarea,input[type=text],input[type=search]{width:100%;font-size:1.05rem;font-family:inherit;border:3px solid var(--g);border-radius:14px;padding:10px}
+textarea{min-height:180px}
+.sw{display:flex;align-items:center;gap:8px;font-weight:bold}
+.sw input{width:22px;height:22px}
+.lv{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.result{white-space:pre-wrap;font-size:1.1rem;line-height:2.1}
+mark{border-radius:6px;padding:2px 1px;cursor:pointer;color:inherit}
+mark.yellow{background:#ffe066}mark.red{background:#ffb3a7}
+#tip{white-space:pre-wrap;position:absolute;display:none;max-width:280px;background:#fff;border:3px solid var(--o);border-radius:16px;padding:10px 12px;z-index:9;box-shadow:0 4px 12px #0003;font-size:.95rem;line-height:1.6}
+.adv{background:#eaffd9;border-color:var(--g);white-space:pre-wrap}
+.ok{color:#2e8b12;font-weight:bold}.ng{color:#d9480f;font-weight:bold}
+#load{display:none;text-align:center;font-weight:bold;padding:14px}
+.spin{display:inline-block;animation:sp 1s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px}
+.k{background:#fff7d6;border:2px solid var(--y);border-radius:14px;padding:8px 4px;text-align:center;cursor:pointer;font-size:1.05rem}
+.k:active{background:var(--g)}
+#modal,#subModal{display:none;position:fixed;inset:0;background:#0006;z-index:20;overflow:auto}
+#modal>div,#subModal>div{background:#fff;max-width:640px;margin:20px auto;border-radius:20px;padding:18px;border:4px solid var(--o)}
+ol{padding-left:1.3em;font-size:.95rem}
+select{font-family:inherit;font-size:1rem;border:3px solid var(--o);border-radius:14px;padding:6px;background:#fff;color:var(--ink)}#subText{white-space:pre-wrap;background:#fffbea;border-radius:12px;padding:8px;max-height:160px;overflow:auto;font-size:.95rem}.ext h3{margin:.9em 0 .2em;color:#d26a00;font-size:1.05rem}.ext ul{margin:.2em 0;padding-left:1.2em}.ext .it{background:#fff7d6;border-radius:12px;padding:8px 10px;margin:6px 0}.ext small{color:#7a6a3a}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+</style>
+</head>
+<body>
+<header>
+  <h1>✏️ 作文＆俳句レベルアップアドバイザー</h1>
+  <!-- AI先生モード / AIなしモード のスイッチ -->
+  <select id="grade" aria-label="学年"><option value="low">低学年</option><option value="mid" selected>中学年</option><option value="high">高学年</option></select>
+  <label class="sw"><input type="checkbox" id="aiSw"> AI先生モード</label>
+  <button class="gear" id="gearBtn" aria-label="先生用設定">⚙️</button>
+</header>
+<div class="tabs">
+  <button class="tab on" data-p="essay">📝 作文</button>
+  <button class="tab" data-p="haiku">🌸 詩・俳句</button>
+  <button class="tab" data-p="kigo">📖 季語図鑑</button>
+</div>
+<main>
+<!-- ① 作文 -->
+<section class="page on" id="essay">
+  <div class="box"><textarea id="essayIn" placeholder="ここに作文を書くか、はりつけよう"></textarea>
+    <p><label class="btn" style="display:inline-block;padding:8px 16px;font-size:1rem">📷 写真から入力<input type="file" id="essayPhoto" accept="image/*" hidden></label> <small>手書きを撮ると文字にしてくれるよ（AI先生モード）</small></p>
+    <div id="lvBox" style="display:none"><b>先生のきびしさ：</b>
+      <div class="lv" id="lv"></div></div>
+    <p><button class="btn" id="essayGo">チェックする！</button></p></div>
+  <div class="box result" id="essayOut" style="display:none"></div>
+  <div class="box adv" id="essayAdv" style="display:none"></div>
+  <div class="box ext" id="essayExt" style="display:none"></div>
+  <div class="box"><button class="btn" data-sub="essay">📮 完成した作品を提出する</button></div>
+</section>
+<!-- ② 俳句 -->
+<section class="page" id="haiku">
+  <div class="box"><textarea id="haikuIn" style="min-height:110px" placeholder="例：ふるいけや　かわずとびこむ　みずのおと（スペースか改行で区切る）"></textarea>
+    <p><label class="btn" style="display:inline-block;padding:8px 16px;font-size:1rem">📷 写真から入力<input type="file" id="haikuPhoto" accept="image/*" hidden></label> <small>手書きを撮ると文字にしてくれるよ（AI先生モード）</small></p>
+    <p><button class="btn" id="haikuGo">チェックする！</button></p></div>
+  <div class="box" id="haikuAuto" style="display:none"></div>
+  <div class="box result" id="haikuOut" style="display:none"></div>
+  <div class="box adv" id="haikuAdv" style="display:none"></div>
+  <div class="box ext" id="haikuExt" style="display:none"></div>
+  <div class="box"><button class="btn" data-sub="haiku">📮 完成した作品を提出する</button></div>
+</section>
+<!-- ③ 季語図鑑 -->
+<section class="page" id="kigo">
+  <div class="tabs" id="seasonTabs" style="padding:0"></div>
+  <p><input type="search" id="kq" placeholder="さがす（例：さくら）"></p>
+  <div id="kList"></div><p id="copied" class="ok"></p>
+</section>
+</main>
+<div id="load"><span class="spin">🌀</span> AI先生が考え中…（20びょうくらいかかるよ）</div>
+<div id="tip"></div>
+
+<!-- 教員用設定 -->
+<div id="modal"><div>
+  <h2>⚙️ 先生用設定</h2>
+  <p>GASのWebアプリURL：<input type="text" id="gasUrl" placeholder="https://script.google.com/macros/s/…/exec"></p>
+  <button class="btn" id="saveUrl">保存</button> <button class="tab" id="closeM">とじる</button>
+  <h3>児童配付用URLをつくる</h3>
+  <p style="font-size:.9rem">上のGAS URLを入れた状態で作ります。このURLを開いた児童の画面には⚙️（設定）が出ず、GAS URLの入力も要りません。</p>
+  <p>学年：<select id="cfgGrade"><option value="low">低学年</option><option value="mid" selected>中学年</option><option value="high">高学年</option></select></p>
+  <p><label><input type="checkbox" id="cfgLock"> 学年を固定する（児童は変えられない）</label><br>
+  <label><input type="checkbox" id="cfgAi" checked> 最初からAI先生モードにする</label><br>
+  <label><input type="checkbox" id="cfgSub" checked> 提出ボタンを表示する</label></p>
+  <p><button class="btn" id="mkUrl">配付用URLをつくる</button></p>
+  <input type="text" id="stuUrl" readonly style="display:none">
+  <p><button class="tab" id="cpUrl" style="display:none">コピー</button> <a id="tryUrl" target="_blank" style="display:none">このURLで試す（児童の見え方）</a></p>
+  <p id="stuMsg" class="ok"></p>
+  <h3>季語を追加する</h3>
+  <p>
+    <select id="addSeason"><option>春</option><option>夏</option><option>秋</option><option>冬</option></select>
+    ジャンル：<input type="text" id="addGenre" list="genreList" value="その他" style="width:11em;padding:6px">
+    <datalist id="genreList"><option>生き物</option><option>植物</option><option>天候・自然</option><option>くらし・行事</option></datalist>
+  </p>
+  <textarea id="addWords" style="min-height:100px" placeholder="季語をまとめて貼り付け（「、」「,」スペース、改行で区切れます）&#10;例：ひばり、つばめ、うぐいす&#10;&#10;季節やジャンルもまとめて書く場合は1行ずつ&#10;春:植物:桜,梅,菜の花&#10;夏:生き物:蝉,蛍"></textarea>
+  <p><button class="btn" id="addBtn">登録する</button>
+     <button class="tab" id="expBtn">登録分をコピー</button>
+     <button class="tab" id="resetBtn">登録分を全部消す</button></p>
+  <p id="addMsg" class="ok"></p>
+  <p style="font-size:.85rem">※追加した季語はこの端末のブラウザに保存されます。他の端末では「登録分をコピー」した内容を貼り付けて登録してください。</p>
+  <h3>GASセットアップ手順</h3>
+  <ol>
+    <li><a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a>でGemini APIキーを作る。</li>
+    <li>Googleスプレッドシートを新しく作り（提出された作品の保存先になります）、「拡張機能」→「Apps Script」を開く。</li>
+    <li>「コード.gs」の中身を消して、Code.gsの内容を貼り付ける。</li>
+    <li>左の⚙「プロジェクトの設定」→「スクリプトプロパティ」に <b>GEMINI_API_KEY</b> という名前でキーを追加。（モデルを変えたいときは <b>GEMINI_MODEL</b> も追加できます）</li>
+    <li>右上「デプロイ」→「新しいデプロイ」→種類「ウェブアプリ」。実行ユーザー：自分、アクセス：<b>全員</b>にして、承認を許可。</li>
+    <li>表示された「ウェブアプリのURL」をここに貼って保存。コードを直したら「デプロイを管理」で新バージョンにする。</li>
+    <li>提出された作品は、スプレッドシートの「提出」シートに自動で1行ずつ保存されます（日時・クラス・出席番号・名前・作品）。別のスプレッドシートに保存したいときは、スクリプトプロパティ <b>SHEET_ID</b> にそのIDを入れます。</li>
+  </ol>
+  <p style="font-size:.85rem">※ AIなしモードはURLなしで使えます。</p>
+</div></div>
+
+<!-- 提出フォーム -->
+<div id="subModal"><div>
+  <h2>📮 作品を提出する</h2>
+  <p>クラス：<input type="text" id="subClass" placeholder="例：3年1組" maxlength="20"></p>
+  <p>出席番号：<input type="text" id="subNo" inputmode="numeric" placeholder="例：12" maxlength="10"></p>
+  <p>名前：<input type="text" id="subName" placeholder="例：山田 花子" maxlength="30"></p>
+  <p id="subTitleRow">題名（なくてもOK）：<input type="text" id="subTitle" maxlength="60"></p>
+  <p style="background:#fff0d6;border-radius:12px;padding:8px;font-size:.95rem">⚠️ チェックのあとに<b>直した最終版</b>を、ここにはりつけてね。<br>チェックしたときと同じ文章は、提出できないよ。</p>
+  <p>提出する作品（直した最終版）：</p><textarea id="subBody" style="min-height:140px" placeholder="直した作品をここにはりつけてね"></textarea>
+  <p><button class="btn" id="subSend">提出する</button> <button class="tab" id="subClose">もどる</button></p>
+  <p id="subMsg" class="ok"></p>
+</div></div>
+<script>
+// ===== 季語データ（ジャンル別）。ここに足せば図鑑とチェックの両方に反映されます =====
+const KIGO_BASE = {
+ '春':{'生き物':'蝶=ちょうちょう/ちょう,うぐいす,つばめ,蛙=かえる/かわず,蜂=はち,ひばり,おたまじゃくし,雀の子=すずめのこ,あさり,蛤=はまぐり','植物':'桜=さくら,梅=うめ,菜の花=なのはな,つくし,たんぽぽ,すみれ,チューリップ,桃の花=もものはな,れんげ草=れんげそう,椿=つばき,木蓮=もくれん,藤=ふじ,山吹=やまぶき,ふきのとう,若草=わかくさ,つつじ','天候・自然':'春風=はるかぜ,朧月=おぼろづき,雪解け=ゆきどけ,陽炎=かげろう,春雨=はるさめ,霞=かすみ,花曇り=はなぐもり,春一番=はるいちばん,菜種梅雨=なたねづゆ,春の海=はるのうみ,麗か=うららか,暖か=あたたか,山笑う=やまわらう,水温む=みずぬるむ','くらし・行事':'入学式=にゅうがくしき,花見=はなみ,ひな祭り=ひなまつり,卒業=そつぎょう,潮干狩=しおひがり,ぶらんこ,シャボン玉=しゃぼんだま,遠足=えんそく,春休み=はるやすみ,種まき=たねまき,凧=たこ,草餅=くさもち,桜餅=さくらもち,彼岸=ひがん,雛人形=ひなにんぎょう'},
+ '夏':{'生き物':'蝉=せみ,蛍=ほたる,金魚=きんぎょ,かぶと虫=かぶとむし,蚊=か,蟻=あり,くわがた,かたつむり,ほととぎす,海月=くらげ,鮎=あゆ,蜥蜴=とかげ,あめんぼ','植物':'向日葵=ひまわり,紫陽花=あじさい,新緑=しんりょく,若葉=わかば,あやめ,トマト,きゅうり,西瓜=すいか,茄子=なす,枝豆=えだまめ,蓮=はす,百合=ゆり,青葉=あおば,夕顔=ゆうがお','天候・自然':'夕立=ゆうだち,入道雲=にゅうどうぐも,梅雨=つゆ/ばいう,雷=かみなり,青空=あおぞら,夏の月=なつのつき,夏の雲=なつのくも,虹=にじ,五月雨=さみだれ,炎天=えんてん,涼し=すずし,夕焼け=ゆうやけ,夏の海=なつのうみ,夏の夜=なつのよ,夕凪=ゆうなぎ','くらし・行事':'夏祭=なつまつり,花火=はなび,プール,風鈴=ふうりん,かき氷=かきごおり,麦茶=むぎちゃ,扇風機=せんぷうき,浴衣=ゆかた,海水浴=かいすいよく,夏休み=なつやすみ,そうめん,日傘=ひがさ,団扇=うちわ,蚊取り線香=かとりせんこう,ところてん,打ち水=うちみず'},
+ '秋':{'生き物':'赤とんぼ,鈴虫=すずむし,雁=かり/がん,秋刀魚=さんま,こおろぎ,いなご,松虫=まつむし,きりぎりす,渡り鳥=わたりどり,鮭=さけ,百舌=もず,虫の声=むしのこえ,蜻蛉=とんぼ','植物':'紅葉=もみじ,コスモス,柿=かき,栗=くり,稲穂=いなほ,朝顔=あさがお,彼岸花=ひがんばな,萩=はぎ,芒=すすき,銀杏=いちょう/ぎんなん,どんぐり,梨=なし,葡萄=ぶどう,松茸=まつたけ,菊=きく,林檎=りんご','天候・自然':'名月=めいげつ,秋風=あきかぜ,霧=きり,稲妻=いなずま,夜長=よなが,天高し=てんたかし,秋晴れ=あきばれ,秋の空=あきのそら,台風=たいふう,野分=のわき,爽やか=さわやか,冷やか=ひややか,天の川=あまのがわ,十五夜=じゅうごや','くらし・行事':'運動会=うんどうかい,月見=つきみ,お彼岸=おひがん,秋祭=あきまつり,新米=しんまい,読書=どくしょ,七夕=たなばた,案山子=かかし,稲刈り=いねかり,紅葉狩り=もみじがり,栗拾い=くりひろい,芋掘り=いもほり,ぶどう狩り=ぶどうがり,おはぎ'},
+ '冬':{'生き物':'白鳥=はくちょう,鴨=かも,鶴=つる,鷹=たか,牡蠣,みの虫=みのむし,狐=きつね,ふくろう,千鳥=ちどり,河豚=ふぐ,雪うさぎ=ゆきうさぎ,冬眠=とうみん,おしどり','植物':'枯葉=かれは,水仙=すいせん,山茶花=さざんか,白菜=はくさい,蜜柑=みかん,大根=だいこん,落ち葉=おちば,枯れ木=かれき,葱=ねぎ,ほうれん草=ほうれんそう,柚子=ゆず,南天=なんてん,冬木=ふゆき,寒梅=かんばい,蕪=かぶ','天候・自然':'雪=ゆき,霜=しも,北風=きたかぜ,氷=こおり,木枯らし=こがらし,冬の月=ふゆのつき,冬晴れ=ふゆばれ,吹雪=ふぶき,霰=あられ,冬の空=ふゆのそら,冬の海=ふゆのうみ,冬の星=ふゆのほし,霜柱=しもばしら,氷柱=つらら,初雪=はつゆき,寒さ=さむさ','くらし・行事':'大晦日=おおみそか,お正月=おしょうがつ,クリスマス,こたつ,餅つき=もちつき,年賀状=ねんがじょう,雪だるま=ゆきだるま,雪合戦=ゆきがっせん,スキー,スケート,焚き火=たきび,年越し=としこし,おでん,手袋=てぶくろ,七五三=しちごさん,初詣=はつもうで,お年玉=おとしだま'}
+};
+// ===== 先生が追加した季語（localStorage）を、初期データに合体 =====
+let KIGO={};
+function getCustom(){try{return JSON.parse(localStorage.getItem('kigoCustom')||'{}')}catch(e){return {}}}
+function mergeKigo(){
+  KIGO=JSON.parse(JSON.stringify(KIGO_BASE));
+  const c=getCustom();
+  Object.keys(c).forEach(s=>{if(!KIGO[s])return;Object.keys(c[s]).forEach(g=>{
+    KIGO[s][g]=(KIGO[s][g]?KIGO[s][g]+',':'')+c[s][g]})});
+}
+mergeKigo();
+const $=s=>document.querySelector(s);
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let level=3, season='春';
+// ===== 児童配付用URL：URLの「#c=…」に入れた設定を読む（学校のGAS以外には送らない）=====
+let CFG=null;
+(function(){const m=location.hash.match(/^#c=([\w-]+)/);
+  if(m)try{const c=JSON.parse(atob(m[1].replace(/-/g,'+').replace(/_/g,'/')));
+    if(typeof c.u=='string'&&c.u.indexOf('https://script.google.com/')==0)CFG=c}catch(e){}})();
+const getUrl=()=>CFG?CFG.u:localStorage.getItem('gasUrl'); // 児童画面は配付URLの設定、先生の画面は保存したURL
+
+// ===== タブ切り替え =====
+document.querySelectorAll('.tab[data-p]').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.tab[data-p]').forEach(x=>x.classList.toggle('on',x===b));
+  document.querySelectorAll('.page').forEach(p=>p.classList.toggle('on',p.id===b.dataset.p));
+});
+$('#aiSw').onchange=()=>{$('#lvBox').style.display=$('#aiSw').checked?'block':'none'};
+
+// ===== きびしさボタン =====
+const NAMES=['あまあま','やさしめ','ふつう','辛口','激鬼'];
+NAMES.forEach((n,i)=>{const b=document.createElement('button');b.className='sbtn'+(i==2?' on':'');
+  b.textContent=(i+1)+' '+n+'先生';
+  b.onclick=()=>{level=i+1;document.querySelectorAll('#lv .sbtn').forEach(x=>x.classList.remove('on'));b.classList.add('on')};
+  $('#lv').appendChild(b)});
+
+// ===== 設定モーダル =====
+$('#gasUrl').value=localStorage.getItem('gasUrl')||'';
+$('#grade').value=CFG?(CFG.g||'mid'):(localStorage.getItem('grade')||'mid');
+$('#grade').onchange=()=>{if(!CFG)localStorage.setItem('grade',$('#grade').value)};
+if(CFG){ // 児童用の画面：設定ボタンを隠し、先生が決めた初期設定にする
+  $('#gearBtn').style.display='none';
+  if(CFG.l)$('#grade').disabled=true;
+  $('#aiSw').checked=!!CFG.a;$('#lvBox').style.display=CFG.a?'block':'none';
+  if(CFG.s===0)document.querySelectorAll('[data-sub]').forEach(b=>b.parentElement.style.display='none');
+}
+$('#gearBtn').onclick=()=>$('#modal').style.display='block';
+$('#closeM').onclick=()=>$('#modal').style.display='none';
+$('#saveUrl').onclick=()=>{localStorage.setItem('gasUrl',$('#gasUrl').value.trim());alert('保存しました');$('#modal').style.display='none'};
+
+// ===== 季語の追加（貼り付け一括登録）=====
+$('#addBtn').onclick=()=>{
+  const c=getCustom();let added=0,skip=0;
+  const split=s=>s.split(/[,、，\s　・]+/).filter(Boolean); // 「桜=さくら」と書くと読みも登録できる
+  $('#addWords').value.split('\n').forEach(line=>{
+    if(!line.trim())return;
+    let sea=$('#addSeason').value,gen=$('#addGenre').value.trim()||'その他',words=line;
+    // 「春:植物:桜,梅」形式の行は、その季節・ジャンルを使う
+    const m=line.match(/^\s*([春夏秋冬])\s*[:：\/／]\s*([^:：\/／]+?)\s*[:：\/／]\s*(.+)$/);
+    if(m){sea=m[1];gen=m[2];words=m[3]}
+    split(words).forEach(w=>{
+      const exists=Object.values(KIGO[sea]).some(v=>v.split(',').map(wk).includes(wk(w)));
+      if(exists){skip++;return}
+      c[sea]=c[sea]||{};c[sea][gen]=(c[sea][gen]?c[sea][gen]+',':'')+w;
+      KIGO[sea][gen]=(KIGO[sea][gen]?KIGO[sea][gen]+',':'')+w; // 重複チェック用に即反映
+      added++});
+  });
+  localStorage.setItem('kigoCustom',JSON.stringify(c));
+  mergeKigo();drawKigo();
+  $('#addMsg').textContent=added+'語を登録しました'+(skip?'（すでにある'+skip+'語はスキップ）':'');
+  if(added)$('#addWords').value='';
+};
+$('#expBtn').onclick=()=>{
+  const c=getCustom();let t='';
+  Object.keys(c).forEach(s=>Object.keys(c[s]).forEach(g=>t+=s+':'+g+':'+c[s][g]+'\n'));
+  if(!t){$('#addMsg').textContent='登録分はまだありません';return}
+  $('#addWords').value=t; // 欄に出すので、そのままコピーできる
+  $('#addWords').select();
+  try{document.execCommand('copy')}catch(e){}
+  $('#addMsg').textContent='登録分を入力欄に出しました（コピー済み）。他の端末に貼り付けて「登録する」を押してね';
+};
+$('#resetBtn').onclick=()=>{
+  if(!confirm('追加した季語をすべて消します。よろしいですか？'))return;
+  localStorage.removeItem('kigoCustom');mergeKigo();drawKigo();$('#addMsg').textContent='消しました';
+};
+
+// ===== 児童配付用URLをつくる =====
+$('#mkUrl').onclick=()=>{
+  const u=$('#gasUrl').value.trim();
+  if(u.indexOf('https://script.google.com/')!=0){$('#stuMsg').textContent='先に上の欄へ、GASのURL（https://script.google.com/… で始まるもの）を入れてね';return}
+  const c={u,g:$('#cfgGrade').value,l:$('#cfgLock').checked?1:0,a:$('#cfgAi').checked?1:0,s:$('#cfgSub').checked?1:0};
+  const code=btoa(JSON.stringify(c)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  const url=location.href.split('#')[0]+'#c='+code;
+  $('#stuUrl').value=url;$('#tryUrl').href=url;
+  ['#stuUrl','#cpUrl','#tryUrl'].forEach(x=>$(x).style.display='inline-block');$('#stuUrl').style.display='block';
+  $('#stuMsg').textContent=/^https?:/.test(location.protocol)?'できました。このURLを児童に配付してね。':'⚠️ いまはファイルを直接開いているので、このURLは児童の端末では使えません。GitHub PagesのURLで開いてから作り直してね。';
+};
+$('#cpUrl').onclick=()=>{const i=$('#stuUrl');i.select();
+  (navigator.clipboard?navigator.clipboard.writeText(i.value):Promise.reject()).catch(()=>document.execCommand('copy'));
+  $('#stuMsg').textContent='コピーしました';};
+
+// ===== 吹き出し表示 =====
+const tip=$('#tip');
+document.addEventListener('click',e=>{
+  const m=e.target.closest('mark[data-r]');
+  if(!m){tip.style.display='none';return}
+  tip.textContent=m.dataset.r;tip.style.display='block';
+  const r=m.getBoundingClientRect();
+  tip.style.left=Math.max(6,Math.min(r.left+scrollX,innerWidth-300))+'px';
+  tip.style.top=(r.bottom+scrollY+8)+'px';
+});
+
+// ===== 指摘をハイライトにして表示（hl: {s,e,reason,type} または {text,...}）=====
+function render(text,hl){
+  hl.forEach(h=>{ // AIの指摘は文字列から位置を探す
+    if(h.s==null){const i=text.indexOf(h.text||'');if(i<0||!h.text)return;h.s=i;h.e=i+h.text.length}});
+  hl=hl.filter(h=>h.s!=null).sort((a,b)=>(a.e-a.s)-(b.e-b.s)); // 短い（具体的な）指摘を先に
+  // 区切り位置をぜんぶ集めて、区間ごとに「その場所にかかっている指摘」をまとめる
+  const cuts=[...new Set([0,text.length,...hl.flatMap(h=>[h.s,h.e])])].sort((x,y)=>x-y);
+  const segs=[];
+  for(let k=0;k<cuts.length-1;k++){
+    const a=cuts[k],b=cuts[k+1],cov=hl.filter(h=>h.s<=a&&h.e>=b);
+    const reasons=[...new Set(cov.map(h=>h.reason).filter(Boolean))].join('\n＋');
+    const type=cov.length?(cov.some(h=>h.type=='red')?'red':'yellow'):'';
+    const last=segs[segs.length-1];
+    if(last&&last.type==type&&last.reasons==reasons)last.t+=text.slice(a,b); // 同じ内容なら1つにつなぐ
+    else segs.push({t:text.slice(a,b),type,reasons});
+  }
+  return segs.map(g=>g.type?'<mark class="'+g.type+'" data-r="'+esc(g.reasons)+'">'+esc(g.t)+'</mark>':esc(g.t)).join('');
+}
+
+// ===== AIなし：作文のローカル解析 =====
+function localEssay(t){
+  const G={low:[40,25],mid:[50,30],high:[60,35]}[$('#grade').value]||[60,35]; // 学年ごとの「長い文」の目安
+  const hl=[],tips=[],add=(s,e,type,reason)=>hl.push({s,e,type,reason});
+  // 正規表現にあてはまる所を全部ハイライト（skip=最初の何個を見のがすか）
+  const find=(re,type,fn,skip=0)=>{let m,n=0;while((m=re.exec(t))){if(++n>skip)add(m.index,m.index+m[0].length,type,fn(m))}};
+  // ① 行頭の1字下げ
+  let pos=0;t.split('\n').forEach(l=>{if(l.trim()&&!/^　/.test(l))add(pos,pos+1,'yellow','段落のはじめは1マスあけよう（1字下げ）');pos+=l.length+1});
+  // ② 文ごとのチェック
+  const re=/[^。！？\n]+[。！？]?/g;let m;const ss=[];
+  while((m=re.exec(t))){
+    const s=m[0],i=m.index,c=s.replace(/[。！？\s]/g,'');if(!c)continue;ss.push({s,i,c});
+    const all=(r,type)=>add(i,i+s.length,type,r);
+    if(s.length>G[0])all('一文が'+s.length+'字と長いよ。2つに分けよう。','red');
+    else if(s.length>G[1]&&!s.includes('、'))all('読点「、」がないよ。意味の切れ目に入れよう。','yellow');
+    else if((s.match(/、/g)||[]).length>=5)all('読点が多すぎるかも。','yellow');
+    // ねじれ（主語と述語・呼応）
+    if(/(夢|目標|願い|めあて|ねらい|楽しみ|感想|思い出|したいこと)は/.test(c)&&/(ます|ました|ません|いる|した|たい|る)$/.test(c)&&!/(こと|の)(です|だ|でした|だった)?$/.test(c))
+      all('「〜は」で始まった文は「〜ことです」でむすぶと、ねじれがなくなるよ。','red');
+    else if(/(したのは|行ったのは|思ったのは|感じたのは|楽しかったのは|うれしかったのは)/.test(c)&&/(ます|ました)$/.test(c))
+      all('「〜のは」で始まったら「〜ことです」「〜からです」でむすぼう。','red');
+    else if(/なぜなら/.test(c)&&!/(から|ため)(です|だ|でした|だった)?$/.test(c))all('「なぜなら」は「〜からです」でむすぶよ。','red');
+    else if(/(ぜんぜん|全然|決して|けっして)/.test(c)&&!/(ない|ません|なかった|ず)/.test(c))all('「ぜんぜん」「決して」のあとは「〜ない」「〜ません」で受けるよ。','red');
+    // 「〜たり」は2回使う
+    const tr=/(った|んだ|いた|した|えた|けた|てた|めた|きた|べた|れた|みた)り/g,ta=[];let tm;
+    while((tm=tr.exec(s)))ta.push(tm);
+    if(ta.length==1)add(i+ta[0].index,i+ta[0].index+ta[0][0].length,'yellow','「〜たり」は「〜たり、〜たりする」と2回使うよ。（例：ゲームをしたり、本を読んだりして遊びました）');
+    // 「の」の連続
+    if(/の[^のはがをにでと、]{1,8}の[^のはがをにでと、]{1,8}の/.test(c))all('「の」が3つ続いているよ。言い方を変えて短くしよう。','yellow');
+  }
+  // ③ 同じ語尾が3回続く
+  for(let i=2;i<ss.length;i++){const k=ss[i].c.slice(-2);
+    if(k&&k==ss[i-1].c.slice(-2)&&k==ss[i-2].c.slice(-2))add(ss[i].i,ss[i].i+ss[i].s.length,'yellow','同じ終わり方（「'+k+'」）が3回続いているよ。変化をつけよう。')}
+  // ④ 文体のまざり（です・ます と だ・である）
+  const pol=x=>/(です|ます|ました|ません|でした|ましょう|ください)$/.test(x.c);
+  const inq=x=>/[「『]/.test(x.c)&&!/[」』]/.test(x.c);
+  const pols=ss.filter(pol),plain=ss.filter(x=>!pol(x)&&!inq(x)&&!/^[「『]/.test(x.c)&&/(だ|だった|である|ない|た|る|い|う)$/.test(x.c));
+  if(pols.length&&plain.length)(pols.length<plain.length?pols:plain).forEach(x=>add(x.i,x.i+x.s.length,'red','「です・ます」と「だ・である」がまざっているよ。どちらかにそろえよう。'));
+  // ⑤ 接続詞の連発
+  const cnt={};ss.forEach(x=>{const w=(x.c.match(/^(そして|それから|だから|でも|しかし|また)/)||[])[1];
+    if(w&&(cnt[w]=(cnt[w]||0)+1)>=3)add(x.i,x.i+w.length,'yellow','「'+w+'」で始まる文が'+cnt[w]+'回目。つなぎ言葉なしでも書けるよ。')});
+  // ⑥ 「思う」の連発・同じ言葉のくり返し
+  find(/思(いました|った|います|う)/g,'yellow',()=>'「思う」が多いよ。見たこと・したこと・聞いたことを書こう。',2);
+  const pw={};let mm;const rw=/[一-龥]{2,}/g;
+  while((mm=rw.exec(t)))(pw[mm[0]]=pw[mm[0]]||[]).push(mm.index);
+  Object.keys(pw).forEach(w=>{if(pw[w].length>=4)pw[w].slice(2).forEach(p=>add(p,p+w.length,'yellow','「'+w+'」が'+pw[w].length+'回出ているよ。言いかえや「それ」にできないかな。'))});
+  // ⑦ 文字・ことばの誤り
+  find(/(見|食べ|来|出|寝|起き|着|降り|考え|信じ|借り|生き|助け|答え)れ(る|ない|ます|ました|た)/g,'red',m=>'「'+m[0]+'」は「ら」ぬき言葉。「'+m[1]+'られ'+m[2]+'」と書こう。');
+  find(/(私|僕|ぼく|わたし|これ|それ|あれ|お母さん|お父さん)わ(?!ら)/g,'red',m=>'「'+m[1]+'は」と書くよ。助詞の「は」は「わ」と書かないよ。');
+  find(/(学校|公園|家|うち|おうち|海|山|図書館|駅|店|町)え(?=行|い|来|き|帰|向)/g,'red',()=>'行く先を表す助詞は「え」ではなく「へ」だよ。');
+  find(/[一-龥]お(?=食べ|見|読|書|飲|持|作|聞|買|使)/g,'red',()=>'ものを表す助詞は「お」ではなく「を」だよ。');
+  find(/[ぁ-んァ-ヶ一-龥][,.]/g,'red',()=>'半角の「,」「.」は使わず「、」「。」を使おう。');
+  find(/[、。]{2,}/g,'red',()=>'句読点が重なっているよ。');
+  find(/^[、。]/gm,'red',()=>'行のはじめに「、」「。」は書かないよ。前の行の終わりに付けよう。');
+  const o=(t.match(/[「『]/g)||[]).length,cl=(t.match(/[」』]/g)||[]).length;
+  if(o!=cl){const p=Math.max(t.lastIndexOf(o>cl?'「':'」'),0);add(p,p+1,'red','かぎかっこ「 」の数が合っていないよ。')}
+  const te=t.trimEnd();if(te&&!/[。！？」』）]$/.test(te))add(te.length-1,te.length,'yellow','文の最後に「。」をつけよう。');
+  // ⑧ 話し言葉
+  find(/すごく|とても|だから|めっちゃ|めちゃくちゃ|めちゃ|なんか|やっぱり|ちょっと|いっぱい|マジ|ほんとに|ていうか|じゃん|ちゃった|だよね|けっこう|あんまり|でも、|超(?![えす過])/g,'yellow',m=>'「'+m[0]+'」は話し言葉っぽいよ。作文らしい言い方や、具体的な言葉にしよう。');
+  find(/うれしかった|楽しかった|たのしかった|おもしろかった|面白かった|すごかった|こわかった|怖かった|かなしかった|悲しかった/g,'yellow',m=>'「'+m[0]+'」だけだと気持ちが伝わりにくいよ。顔・体・声はどうなった？（例：むねがドキドキした、思わずさけんだ）');
+  // ⑨ 内容のヒント（ない物を教える）
+  const n=t.replace(/\s/g,'').length;
+  if(!/うれし|楽し|たのし|悲し|かなし|悔し|くやし|驚|びっくり|ドキドキ|わくわく|ワクワク|こわ|怖|さみし|寂し|はずかし|恥ずか|ほっと|感動|緊張|安心|不安/.test(t))tips.push('気持ちを表す言葉が見つからないよ。そのときの気持ちを1つ足そう。');
+  const sense={色:/赤|青|白|黒|黄|緑|金|銀|紫|茶|ピンク|あか|あお|しろ|くろ|きいろ|みどり|きらきら|ぴかぴか/,音:/音|声|ひびき|響|鳴|ざわざわ|ガタン|ドン|ぱちぱち|ザー|ゴロゴロ/,におい:/におい|匂|香|かおり/,さわり:/冷た|つめた|熱|あつ|暖|あたたか|寒|さむ|ふわふわ|ざらざら|ひんやり/};
+  const miss=Object.keys(sense).filter(k=>!sense[k].test(t));
+  if(miss.length>=3&&n>60)tips.push('五感の言葉（'+miss.join('・')+'）がないよ。1つ足すと場面が見えてくる。');
+  if(n>150&&!/「/.test(t))tips.push('会話文「 」が1つもないよ。だれかの言葉を入れると、生き生きするよ。');
+  if(n>100&&!/ようだ|ような|ように|みたい|まるで/.test(t))tips.push('「まるで〜のようだ」というたとえ表現を1つ使ってみよう。');
+  if(n>300&&t.split(/\n+/).filter(x=>x.trim()).length<2)tips.push('段落を分けよう（はじめ・中・おわり）。');
+  const avg=Math.round(ss.reduce((a,x)=>a+x.c.length,0)/(ss.length||1));
+  let adv='📊 作文の数字\n文字数 '+n+'字（原稿用紙 約'+(n/400).toFixed(1)+'まい） ／ 文 '+ss.length+'こ ／ 一文の平均 '+avg+'字\n'
+   +(hl.length?'指摘は'+hl.length+'か所。色のところをタップしてね。':'機械チェックでは大きな問題は見つかりませんでした。すばらしい！')
+   +'\n\n💡 レベルアップのヒント\n'+tips.map(x=>'・'+x).join('\n')+(tips.length?'\n':'')
+   +'・「うれしかった」→ 顔、手、声など体の動きで気持ちを見せよう。\n・天気や場所の様子を一文足すと、場面が目にうかぶよ。\n\n※文の中身をほめたり、言いかえ案を出したりするのは、AI先生モードの役目だよ。';
+  return {comment:'',highlights:hl,advice:adv};
+}
+
+// ===== 音数カウント（ひらがな・カタカナ）=====
+function mora(s){
+  const k=s.replace(/[\u30a1-\u30f6]/g,c=>String.fromCharCode(c.charCodeAt(0)-96));
+  return k.replace(/[^ぁ-ゖー]/g,'').replace(/[ゃゅょぁぃぅぇぉゎ]/g,'').length;
+}
+// 「桜=さくら」の左側(漢字など)を取り出す
+const wk=w=>w.split(/[=＝]/)[0];
+// カタカナ→ひらがな（「サクラ」も「さくら」として探すため）
+const norm=s=>s.replace(/[\u30a1-\u30f6]/g,c=>String.fromCharCode(c.charCodeAt(0)-96));
+function findKigo(t){
+  // 探す言葉：漢字表記 ＋ ひらがなの読み（「/」で複数OK）。2文字の読みは前後を確かめて探す
+  const all=[];
+  Object.entries(KIGO).forEach(([sea,g])=>Object.values(g).forEach(v=>v.split(',').forEach(w=>{
+    const p=w.split(/[=＝]/),k=p[0];
+    all.push([norm(k),k,sea,false]);
+    (p[1]||'').split('/').forEach(r=>{r=norm(r);const n=r.replace(/[ゃゅょぁぃぅぇぉ]/g,'').length; // 「ちょう」は2音として数える
+      if(n>=3)all.push([r,k,sea,false]);else if(n==2)all.push([r,k,sea,true])});
+  })));
+  all.sort((a,b)=>b[0].length-a[0].length); // 長い言葉から（「雪解け」を「雪」より先に）
+  let rest=norm(t).replace(/ありがとう/g,'　　　　　'),found=[];
+  all.forEach(([c,k,sea,short])=>{
+    let hit=false;
+    if(short){ // 「ゆき」「ちょう」など：言葉の切れ目（はじめ・終わり・助詞の前後）にあるときだけ季語とみなす
+      const re=new RegExp('(^|[\\s　、。,/／の・やをにでとも])('+c.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')(?=$|[\\s　、。,/／のがをはにもでとやへよか])','g');
+      rest=rest.replace(re,(m,a)=>{hit=true;return a+'　'.repeat(c.length)});
+    }else if(rest.includes(c)){hit=true;rest=rest.split(c).join('　')}
+    if(hit&&!found.some(f=>f.w==k))found.push({w:k,sea}); // 漢字でもひらがなでも同じ季語は1つ
+  });
+  return found;
+}
+function haikuAuto(t,aiK,yomi){
+  const src=yomi||t; // AIが付けた「よみ」があれば、それで音数を数える
+  const parts=src.trim().split(/[\s　/／、]+/).filter(Boolean);
+  const want=[5,7,5];let h='';
+  if(parts.length==3){
+    const n=parts.map(mora);
+    h+='<b>音数'+(yomi?'（AI先生がよみを付けて数えたよ）':'')+'：</b>'+parts.map((p,i)=>{const d=n[i]-want[i];
+      return esc(p)+'（'+n[i]+'音 '+(d==0?'<span class="ok">ぴったり</span>':d>0?'<span class="ng">字あまり+'+d+'</span>':'<span class="ng">字たらず'+d+'</span>')+'）'}).join(' ／ ');
+  }else h+='<b>音数'+(yomi?'（AI先生がよみを付けて数えたよ）':'')+'：</b>全部で'+mora(src)+'音（5・7・5の17音がめやす）。スペースか改行で3つに区切ると、くわしく見られるよ。';
+  if(!yomi&&/[一-龥]/.test(t))h+='<br><small>※漢字は音数が数えられません。ひらがなで書くと正しく数えられるよ。</small>';
+  const k=aiK?aiK.map(x=>({w:x.word,sea:x.season})).filter(x=>x.w):findKigo(t);
+  h+='<br><b>季語'+(aiK?'（AI先生が判定）':'')+'：</b>';
+  if(!k.length)h+='<span class="ng">季語数0：見つかりません</span>'+(aiK?'':'（図鑑にある言葉を漢字かひらがなで書いてみよう。図鑑にない季語は⚙️から追加できるよ。AI先生モードなら図鑑にない季語も探すよ）');
+  else if(k.length==1)h+='<span class="ok">季語数1：「'+k[0].w+'」（'+k[0].sea+'）</span>';
+  else h+='<span class="ng">季語数'+k.length+'：季重なり？</span> '+k.map(x=>'「'+x.w+'」（'+x.sea+'）').join('、');
+  return h;
+}
+function localHaiku(t){
+  const hl=[],tips=[];
+  const add=(re,type,fn)=>{let m;while((m=re.exec(t)))hl.push({s:m.index,e:m.index+m[0].length,type,reason:fn(m)})};
+  add(/思った|思う|思います|思いました|感じた/g,'red',()=>'「思った」で終わらず、見えたもの・聞こえた音をそのまま置いてみよう。');
+  add(/うれしい|うれしかった|楽しい|楽しかった|たのしい|かなしい|悲しい|きれい|美しい|すごい|すばらしい|おもしろい|面白い|さびしい|寂しい|こわい|怖い/g,'red',m=>'「'+m[0]+'」は気持ちの言葉。言わずに、景色や音で伝えてみよう。');
+  add(/だから|なぜなら|つまり|でも|しかし/g,'yellow',()=>'説明の言葉は俳句では少なめに。景色を置くだけで伝わるよ。');
+  add(/の[^のや、 　\n]{1,4}の[^のや、 　\n]{1,4}の/g,'yellow',()=>'「の」が3つ続いているよ。リズムが重くなるかも。');
+  const parts=t.trim().split(/[\s　/／、]+/).filter(Boolean);
+  if(parts.length==3)tips.push(/(や|かな|けり|ぞ)$/.test(parts[0])||/(や|かな|けり)$/.test(parts[1])||/(かな|けり)$/.test(parts[2])?'切れ字（や・かな・けり）が使えているね◎':'「や」「かな」「けり」などの切れ字を使うと、句にひと呼吸できるよ（なくてもOK）。');
+  const sense={色:/赤|青|白|黒|黄|緑|金|銀|紫|茶|紅|あか|あお|しろ|くろ|きいろ|みどり/,音:/音|声|鳴|響|ひびき|ざわ|ぱしゃ|ころころ|カラン/,におい:/におい|匂|香|かおり/,さわり:/冷|つめた|熱|あつ|暖|あたたか|寒|さむ|ひんやり|涼|すず/};
+  const mark=Object.keys(sense).map(k=>k+(sense[k].test(t)?'◯':'✕')).join('　');
+  tips.push('五感チェック：'+mark+(/◯/.test(mark)?'':'\n　→ どれか1つ入れると景色が見えてくるよ。'));
+  if(/([ぁ-んァ-ヶ]{2,4})\1/.test(t))tips.push('くり返しの言葉（ぴかぴか など）が使えているね◎');
+  const k=findKigo(t);
+  if(k.length==1)tips.push('季語「'+k[0].w+'」と、ちがう種類のもの（食べ物・人・場所）を組み合わせると、おくゆきが出るよ。');
+  if(k.length>1)tips.push('季語が'+k.length+'つ（'+k.map(x=>x.w).join('・')+'）。主役を1つにしぼろう。');
+  return {highlights:hl,advice:'💡 ヒント\n'+tips.map(x=>'・'+x).join('\n')+'\n・「と思った」を使わず、見えた景色だけを置くと、読む人が自分で感じてくれるよ。'};
+}
+
+// ===== AIへ送信（GAS経由）=====
+async function askAI(tab,text){
+  const url=getUrl();
+  if(!url)throw new Error('⚙️の設定でGASのURLを入れてね（先生に聞いてね）');
+  // text/plain にすると事前確認(preflight)が不要でGASに送れる
+  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({tab,text,level,grade:$('#grade').value})});
+  const j=await r.json();if(j.error)throw new Error(j.error);return j;
+}
+
+// ===== AI先生の詳しい結果（よいところ・言いかえ・表現のくふう など）=====
+function aiExtra(res){
+  const A=x=>Array.isArray(x)?x:[],S=x=>typeof x=='string'?x:'';
+  const sec=(title,body)=>body?'<h3>'+title+'</h3>'+body:'';
+  const list=a=>a.length?'<ul>'+a.map(x=>'<li>'+esc(S(x))+'</li>').join('')+'</ul>':'';
+  let h='';
+  h+=sec('👍 よいところ',list(A(res.praise)));
+  h+=sec('🔍 ありきたりな言葉を見つけたよ',A(res.cliches).map(c=>'<div class="it">「'+esc(S(c.text))+'」<br><small>'+esc(S(c.why))+'</small>'+
+    (A(c.better).length?'<br>✨ 言いかえ：'+A(c.better).map(b=>'「'+esc(S(b))+'」').join(' ／ '):'')+'</div>').join(''));
+  h+=sec('🎨 表現のくふう',A(res.techniques).map(c=>'<div class="it"><b>'+esc(S(c.name))+'</b><br>'+esc(S(c.explain))+
+    (c.example?'<br>例：'+esc(S(c.example)):'')+'</div>').join(''));
+  h+=sec('✏️ 書きなおしの例',A(res.rewrites).map(c=>'<div class="it">'+(c.before?'<small>もと：'+esc(S(c.before))+'</small><br>':'')+
+    '→ '+esc(S(c.after||c.poem))+'<br><small>'+esc(S(c.point))+'</small></div>').join(''));
+  h+=sec('🤔 考えてみよう',list(A(res.questions)));
+  h+=sec('🎯 今日のミッション',res.mission?'<p>'+esc(S(res.mission))+'</p>':'');
+  return h;
+}
+
+// ===== 作品の提出（GAS経由でスプレッドシートに保存）=====
+let subKind='essay';
+const lastChecked={}; // 最後にチェックした文章（essay / haiku）
+const flat=x=>(x||'').replace(/\s/g,''); // 空白・改行をのぞいて比べる
+document.querySelectorAll('[data-sub]').forEach(b=>b.onclick=()=>{
+  subKind=b.dataset.sub;
+  $('#subBody').value='';$('#subTitleRow').style.display=subKind=='essay'?'block':'none';
+  $('#subMsg').textContent='';$('#subSend').disabled=false;$('#subModal').style.display='block';
+});
+$('#subClose').onclick=()=>$('#subModal').style.display='none';
+$('#subSend').onclick=async()=>{
+  const url=getUrl();
+  if(!url){alert('先生に聞いてね（GASのURLが設定されていません）');return}
+  const cls=$('#subClass').value.trim(),no=$('#subNo').value.trim(),name=$('#subName').value.trim(),body=$('#subBody').value;
+  if(!cls||!no||!name){$('#subMsg').textContent='クラス・出席番号・名前を入れてね';return}
+  if(!body.trim()){$('#subMsg').textContent='直した作品をはりつけてね';return}
+  if(body.length>3000){$('#subMsg').textContent='長すぎます（3000字まで）';return}
+  // チェックしたままの文章は送れない
+  if(lastChecked[subKind]&&flat(body)==flat(lastChecked[subKind])){
+    $('#subMsg').textContent='❌ チェックしたときと同じ文章だよ。読み直して、直してからはりつけてね。';return}
+  if(!confirm(cls+' '+no+'番 '+name+' さんの作品（'+flat(body).length+'字）を提出します。よろしいですか？'))return;
+  $('#subSend').disabled=true;$('#subMsg').textContent='送っています…';
+  try{
+    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'submit',kind:subKind,cls,no,name,title:$('#subTitle').value.trim(),text:body,grade:$('#grade').value})});
+    const j=await r.json();if(j.error)throw new Error(j.error);
+    $('#subMsg').textContent='✅ 提出できました！';$('#subBody').value='';
+  }catch(e){$('#subMsg').textContent='❌ '+e.message;$('#subSend').disabled=false}
+};
+
+// ===== 写真から入力（AIが文字に書き起こす）=====
+// 写真は長い辺が1600pxになるよう小さくして送る（通信が速く、読み取りも十分）
+async function shrink(file){
+  const img=await new Promise((ok,ng)=>{const u=URL.createObjectURL(file),i=new Image();
+    i.onload=()=>{URL.revokeObjectURL(u);ok(i)};i.onerror=()=>ng(new Error('写真を開けませんでした'));i.src=u});
+  const k=Math.min(1,1600/Math.max(img.width,img.height)),c=document.createElement('canvas');
+  c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);
+  c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+  return c.toDataURL('image/jpeg',0.85).split(',')[1];
+}
+function setupPhoto(inputSel,taSel,kind){
+  $(inputSel).onchange=async e=>{
+    const f=e.target.files[0];e.target.value='';if(!f)return;
+    if(!$('#aiSw').checked){alert('右上の「AI先生モード」をオンにしてから、もう一度えらんでね');return}
+    const url=getUrl();if(!url){alert('先生に聞いてね（GASのURLが設定されていません）');return}
+    const ta=$(taSel);
+    if(ta.value.trim()&&!confirm('いま書いてある文章は消えます。写真から入れなおしますか？'))return;
+    $('#load').style.display='block';
+    try{
+      const image=await shrink(f);
+      const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'ocr',kind,image})});
+      const j=await r.json();if(j.error)throw new Error(j.error);
+      if(!j.text){alert('文字が読み取れませんでした。'+(j.note||'明るい所で、まっすぐ撮ってみてね。'));return}
+      ta.value=j.text;
+      alert('読み取れたよ！まちがって読まれた字がないか見て、直してから「チェックする」を押してね。'+(j.note?'\n\n'+j.note:''));
+    }catch(err){alert('エラー：'+err.message)}
+    finally{$('#load').style.display='none'}
+  };
+}
+setupPhoto('#essayPhoto','#essayIn','essay');setupPhoto('#haikuPhoto','#haikuIn','haiku');
+
+// ===== 実行 =====
+async function run(tab){
+  const inEl=$(tab=='essay'?'#essayIn':'#haikuIn'),t=inEl.value;
+  if(!t.trim()){alert('文章を入れてね');return}
+  const out=$(tab=='essay'?'#essayOut':'#haikuOut'),adv=$(tab=='essay'?'#essayAdv':'#haikuAdv');
+  if(tab=='haiku'){$('#haikuAuto').innerHTML=haikuAuto(t);$('#haikuAuto').style.display='block'}
+  const btn=$(tab=='essay'?'#essayGo':'#haikuGo');btn.disabled=true; // 二度押し防止
+  let res;
+  try{
+    if($('#aiSw').checked){
+      $('#load').style.display='block';
+      res=await askAI(tab,t);
+    }else res=tab=='essay'?localEssay(t):localHaiku(t);
+  }catch(e){alert('エラー：'+e.message);return}
+  finally{$('#load').style.display='none';btn.disabled=false}
+  lastChecked[tab]=t; // 提出のとき、同じ文章を送れないようにする
+  out.innerHTML=(res.comment?'<div style="white-space:normal"><b>👩‍🏫 '+esc(res.comment)+'</b></div>':'')+render(t,res.highlights||[])
+    +'<div style="font-size:.8rem;color:#888;white-space:normal">※色のところをタップすると理由が出るよ</div>';
+  out.style.display='block';
+  if(tab=='haiku'&&(Array.isArray(res.kigo)||res.yomi))$('#haikuAuto').innerHTML=haikuAuto(t,Array.isArray(res.kigo)?res.kigo:null,res.yomi); // AIの季語・よみで上書き
+  const ex=$(tab=='essay'?'#essayExt':'#haikuExt');ex.innerHTML=aiExtra(res);ex.style.display=ex.innerHTML?'block':'none';
+  adv.textContent=res.advice||'';adv.style.display='block';
+}
+$('#essayGo').onclick=()=>run('essay');
+$('#haikuGo').onclick=()=>run('haiku');
+
+// ===== 季語図鑑 =====
+Object.keys(KIGO).forEach(s=>{const b=document.createElement('button');b.className='sbtn'+(s==season?' on':'');b.textContent=s;
+  b.onclick=()=>{season=s;document.querySelectorAll('#seasonTabs .sbtn').forEach(x=>x.classList.toggle('on',x===b));drawKigo()};
+  $('#seasonTabs').appendChild(b)});
+function drawKigo(){
+  const q=$('#kq').value.trim();let h='';
+  Object.entries(KIGO[season]).forEach(([g,v])=>{
+    const ws=v.split(',').filter(w=>!q||w.includes(q));
+    if(ws.length)h+='<h3>'+g+'</h3><div class="cards">'+ws.map(w=>'<div class="k">'+wk(w)+'</div>').join('')+'</div>'});
+  $('#kList').innerHTML=h||'見つかりませんでした';
+}
+$('#kq').oninput=drawKigo;
+$('#kList').onclick=e=>{const k=e.target.closest('.k');if(!k)return;
+  const w=k.textContent;(navigator.clipboard?navigator.clipboard.writeText(w):Promise.reject()).catch(()=>{
+    const a=document.createElement('textarea');a.value=w;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove()});
+  $('#copied').textContent='「'+w+'」をコピーしたよ！'};
+drawKigo();
+</script>
+</body>
+</html>
